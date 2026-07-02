@@ -1870,7 +1870,8 @@ void XEdDSA::deriveKeys(SHA512 *hash, limb_t *a, const uint8_t privateKey[32])
 /**
  * \brief Signs a message using a specific Ed25519 private key.
  *
- * \param signature The signature value.
+ * \param signature The signature value. Must contain at least 32 bytes of randomness when this function is called,
+ *  and will be overwritten with the signature on exit.
  * \param privateKey The private key to use to sign the message.
  * \param publicKey The public key corresponding to \a privateKey.
  * \param message Points to the message to be signed.
@@ -1896,6 +1897,7 @@ void XEdDSA::sign(uint8_t signature[64], const uint8_t privateKey[32],
     hash.reset();
     hash.update(buf + 32, 32);
     hash.update(message, len);
+    hash.update(signature, 32);
     hash.finalize(buf, 0);
     reduceQFromBuffer(r, buf, t);
 
