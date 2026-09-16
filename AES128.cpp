@@ -305,6 +305,11 @@ bool AESSmall128::setKey(const uint8_t *key, size_t len)
 
 void AESSmall128::decryptBlock(uint8_t *output, const uint8_t *input)
 {
+#if defined(CRYPTO_AES_NO_DECRYPT)
+    // Decryption compiled out; zero the output so callers never see stale data.
+    (void)input;
+    memset(output, 0, 16);
+#else
     uint8_t schedule[16];
     uint8_t round;
     uint8_t posn;
@@ -345,6 +350,7 @@ void AESSmall128::decryptBlock(uint8_t *output, const uint8_t *input)
     // Reverse the initial round and create the output words.
     for (posn = 0; posn < 16; ++posn)
         output[posn] = state2[posn] ^ schedule[posn];
+#endif
 }
 
 void AESSmall128::clear()

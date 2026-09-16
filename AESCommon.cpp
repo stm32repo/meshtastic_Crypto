@@ -23,6 +23,7 @@
 #include "AES.h"
 #include "Crypto.h"
 #include "utility/ProgMemUtil.h"
+#include <string.h>
 
 #if defined(CRYPTO_AES_DEFAULT) || defined(CRYPTO_DOC)
 
@@ -83,6 +84,7 @@ static uint8_t const sbox[256] PROGMEM = {
     0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16
 };
 
+#if !defined(CRYPTO_AES_NO_DECRYPT)
 // AES inverse S-box (http://en.wikipedia.org/wiki/Rijndael_S-box)
 static uint8_t const sbox_inverse[256] PROGMEM = {
     0x52, 0x09, 0x6A, 0xD5, 0x30, 0x36, 0xA5, 0x38,     // 0x00
@@ -118,6 +120,7 @@ static uint8_t const sbox_inverse[256] PROGMEM = {
     0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6, 0x26,     // 0xF0
     0xE1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D
 };
+#endif
 
 /** @endcond */
 
@@ -203,6 +206,7 @@ void AESCommon::subBytesAndShiftRows(uint8_t *output, const uint8_t *input)
     OUT(3, 3) = pgm_read_byte(sbox + IN(2, 3));
 }
 
+#if !defined(CRYPTO_AES_NO_DECRYPT)
 void AESCommon::inverseShiftRowsAndSubBytes(uint8_t *output, const uint8_t *input)
 {
     OUT(0, 0) = pgm_read_byte(sbox_inverse + IN(0, 0));
@@ -222,6 +226,7 @@ void AESCommon::inverseShiftRowsAndSubBytes(uint8_t *output, const uint8_t *inpu
     OUT(3, 2) = pgm_read_byte(sbox_inverse + IN(1, 2));
     OUT(3, 3) = pgm_read_byte(sbox_inverse + IN(0, 3));
 }
+#endif
 
 void AESCommon::mixColumn(uint8_t *output, uint8_t *input)
 {
@@ -240,6 +245,7 @@ void AESCommon::mixColumn(uint8_t *output, uint8_t *input)
     output[3] = a2 ^ a ^ b ^ c ^ d2;
 }
 
+#if !defined(CRYPTO_AES_NO_DECRYPT)
 void AESCommon::inverseMixColumn(uint8_t *output, const uint8_t *input)
 {
     uint16_t t; // Needed by the gmul2, gmul4, and gmul8 macros.
@@ -264,6 +270,7 @@ void AESCommon::inverseMixColumn(uint8_t *output, const uint8_t *input)
     output[2] = a8 ^ a4 ^ a ^ b8 ^ b ^ c8 ^ c4 ^ c2 ^ d8 ^ d2 ^ d;
     output[3] = a8 ^ a2 ^ a ^ b8 ^ b4 ^ b ^ c8 ^ c ^ d8 ^ d4 ^ d2;
 }
+#endif
 
 /** @endcond */
 
@@ -300,6 +307,11 @@ void AESCommon::encryptBlock(uint8_t *output, const uint8_t *input)
 
 void AESCommon::decryptBlock(uint8_t *output, const uint8_t *input)
 {
+#if defined(CRYPTO_AES_NO_DECRYPT)
+    // Decryption compiled out; zero the output so callers never see stale data.
+    (void)input;
+    memset(output, 0, 16);
+#else
     const uint8_t *roundKey = schedule + rounds * 16;
     uint8_t round;
     uint8_t posn;
@@ -327,6 +339,7 @@ void AESCommon::decryptBlock(uint8_t *output, const uint8_t *input)
     roundKey -= 16;
     for (posn = 0; posn < 16; ++posn)
         output[posn] = state2[posn] ^ roundKey[posn];
+#endif
 }
 
 void AESCommon::clear()

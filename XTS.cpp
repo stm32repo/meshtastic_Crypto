@@ -214,6 +214,12 @@ void XTSCommon::encryptSector(uint8_t *output, const uint8_t *input)
  */
 void XTSCommon::decryptSector(uint8_t *output, const uint8_t *input)
 {
+#if defined(CRYPTO_AES_NO_DECRYPT)
+    // Block decryption is compiled out; return a zeroed sector rather than
+    // deriving plaintext from zero-filled blocks.
+    (void)input;
+    memset(output, 0, sectSize);
+#else
     size_t sectLast = sectSize & ~15;
     size_t posn = 0;
     uint32_t t[4];
@@ -258,6 +264,7 @@ void XTSCommon::decryptSector(uint8_t *output, const uint8_t *input)
         blockCipher1->decryptBlock(output, output);
         xorTweak(output, output, u);
     }
+#endif
 }
 
 /**

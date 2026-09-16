@@ -74,7 +74,13 @@ void AESCommon::encryptBlock(uint8_t *output, const uint8_t *input)
 
 void AESCommon::decryptBlock(uint8_t *output, const uint8_t *input)
 {
+#if defined(CRYPTO_AES_NO_DECRYPT)
+    // Decryption compiled out; zero the output so callers never see stale data.
+    (void)input;
+    memset(output, 0, 16);
+#else
     esp_aes_crypt_ecb(ctx, 0, input, output);
+#endif
 }
 
 void AESCommon::clear()
