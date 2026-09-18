@@ -27,43 +27,45 @@
 
 #if !defined(HOST_BUILD)
 
-// CPU is assumed to be little endian.   Edit this file if you
-// need to port this library to a big endian CPU.
+#if defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
 
 #define CRYPTO_LITTLE_ENDIAN 1
 
 #define htole16(x)  (x)
 #define le16toh(x)  (x)
-#define htobe16(x)  \
-    (__extension__ ({ \
-        uint16_t _temp = (x); \
-        ((_temp >> 8) & 0x00FF) | \
-        ((_temp << 8) & 0xFF00); \
-    }))
+#define htobe16(x)  __builtin_bswap16(x)
 #define be16toh(x)  (htobe16((x)))
 
 #define htole32(x)  (x)
 #define le32toh(x)  (x)
-#define htobe32(x)  \
-    (__extension__ ({ \
-        uint32_t _temp = (x); \
-        ((_temp >> 24) & 0x000000FF) | \
-        ((_temp >>  8) & 0x0000FF00) | \
-        ((_temp <<  8) & 0x00FF0000) | \
-        ((_temp << 24) & 0xFF000000); \
-    }))
+#define htobe32(x)  __builtin_bswap32(x)
 #define be32toh(x)  (htobe32((x)))
 
 #define htole64(x)  (x)
 #define le64toh(x)  (x)
-#define htobe64(x)  \
-    (__extension__ ({ \
-        uint64_t __temp = (x); \
-        uint32_t __low = htobe32((uint32_t)__temp); \
-        uint32_t __high = htobe32((uint32_t)(__temp >> 32)); \
-        (((uint64_t)__low) << 32) | __high; \
-    }))
+#define htobe64(x)  __builtin_bswap64(x)
 #define be64toh(x)  (htobe64((x)))
+
+#elif defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+
+#define htole16(x)  __builtin_bswap16(x)
+#define le16toh(x)  (htole16((x)))
+#define htobe16(x)  (x)
+#define be16toh(x)  (x)
+
+#define htole32(x)  __builtin_bswap32(x)
+#define le32toh(x)  (htole32((x)))
+#define htobe32(x)  (x)
+#define be32toh(x)  (x)
+
+#define htole64(x)  __builtin_bswap64(x)
+#define le64toh(x)  (htole64((x)))
+#define htobe64(x)  (x)
+#define be64toh(x)  (x)
+
+#else
+#error "Unsupported or unknown CPU byte order"
+#endif
 
 #else // HOST_BUILD
 
